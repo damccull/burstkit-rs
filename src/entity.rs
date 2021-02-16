@@ -1,3 +1,6 @@
+//! This module contains structs and enums representing various types of entities in Burstcoin.
+//! Burst accounts, transactions, etc.
+
 use std::{convert::TryFrom, usize};
 use thiserror::Error;
 
@@ -15,17 +18,32 @@ const ALPHABET: &str = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const BASE32_LENGTH: usize = 13;
 const BURST_PREFIX: &str = "BURST-";
 
-/// Represents a Burstcoin account address.
+/// Represents a Burstcoin account address. _Example: BURST-B982-YTG4-ZS2F-2C55D_
 #[derive(Debug, PartialEq)]
 pub struct BurstAddress {
     address: String,
 }
 impl BurstAddress {
+    /// Creates a new [`BurstAddress`] from a string.
+    ///
+    /// # Input
+    /// A string in the format: BURST-XXXX-XXXX-XXXX-XXXXX
+    ///
+    /// # Output
+    /// A valid [`BurstAddress`]
+    ///
+    /// # Example:
+    /// ```rust
+    /// use burstkit_rs::entity::BurstAddress;
+    ///
+    /// let burst_address = BurstAddress::new("BURST-B982-YTG4-ZS2F-2C55D".to_string());
+    /// ```
     pub fn new(address: String) -> Self {
         BurstAddress { address }
     }
 }
 impl From<BurstId> for BurstAddress {
+    /// Creates a [`BurstAddress`] from a valid [`BurstId`].
     fn from(burst_id: BurstId) -> Self {
         let mut codeword_length = 0;
         let mut codeword: [usize; INITIAL_CODEWORD.len()] = [0; INITIAL_CODEWORD.len()];
@@ -88,12 +106,27 @@ impl From<BurstId> for BurstAddress {
     }
 }
 
-/// Represents a Burstcoin account Numeric ID number.
+/// Represents a Burstcoin account Numeric ID number. _Example: 399812073269533888_
+
 #[derive(Debug, PartialEq)]
 pub struct BurstId {
     id: u64,
 }
 impl BurstId {
+    /// Creates a new [`BurstId`] from a string.
+    ///
+    /// # Input
+    /// A u64 in the format: 399812073269533888
+    ///
+    /// # Output
+    /// A valid [`BurstId`]
+    ///
+    /// # Example:
+    /// ```rust
+    /// use burstkit_rs::entity::BurstId;
+    ///
+    /// let burst_id = BurstId::new(399812073269533888_u64);
+    /// ```
     pub fn new(id: u64) -> Self {
         BurstId { id }
     }
@@ -101,6 +134,8 @@ impl BurstId {
 impl TryFrom<BurstAddress> for BurstId {
     type Error = BurstAddressConversionError;
 
+    /// Attempts to create a [`BurstId`] from a valid [`BurstAddress']
+    /// Throws a [`BurstAddressConversionError`] on failure.
     fn try_from(value: BurstAddress) -> Result<Self, Self::Error> {
         let burst_address = value.address.replace(BURST_PREFIX, "");
         println!("DEBUG:::::{}", burst_address);
@@ -175,6 +210,7 @@ impl TryFrom<BurstAddress> for BurstId {
     }
 }
 
+/// Represents errors that can occur when converting [`BurstAddress`] to [`BurstId`].
 #[derive(Debug, Error)]
 pub enum BurstAddressConversionError {
     #[error("the code word was too long: `{0:?}`")]
