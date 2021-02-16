@@ -1,4 +1,5 @@
-use std::usize;
+use std::{convert::TryFrom, ops::Index, usize};
+use thiserror::Error;
 
 const INITIAL_CODEWORD: [usize; 17] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 const GEXP: [usize; 32] = [
@@ -27,7 +28,7 @@ impl BurstAddress {
 impl From<BurstId> for BurstAddress {
     fn from(burst_id: BurstId) -> Self {
         let mut codeword_length = 0;
-        let mut codeword: [usize; 17] = [0; 17];
+        let mut codeword: [usize; INITIAL_CODEWORD.len()] = [0; INITIAL_CODEWORD.len()];
 
         let (mut digits, mut length) = u64_to_digit_array(burst_id.id);
 
@@ -83,7 +84,7 @@ impl From<BurstId> for BurstAddress {
                 outstring.push('-');
             }
         }
-        Self { address: outstring }
+        Self::new(outstring)
     }
 }
 
@@ -97,11 +98,76 @@ impl BurstId {
         BurstId { id }
     }
 }
-impl From<BurstAddress> for BurstId {
-    fn from(burst_address: BurstAddress) -> Self {
-        //TODO: Run conversion
-        todo!();
+impl TryFrom<BurstAddress> for BurstId {
+    type Error = BurstAddressConversionError;
+
+    fn try_from(value: BurstAddress) -> Result<Self, Self::Error> {
+        let codeword = INITIAL_CODEWORD;
+        let codeword_length = 0;
+
+        for i in value.address.chars() {
+            let position_in_alphabet = match ALPHABET.chars().position(|s| s == i) {
+                // Skip this iteration if position is none
+                None => continue,
+                Some(i) => i,
+            };
+
+            if codeword.len() > 16 {
+                return Err(BurstAddressConversionError::CodeWordTooLong(codeword));
+            }
+
+            let codeword_index = CODEWORD_MAP[codeword_length];
+            codeword[codeword_index] = position_in_alphabet;
+            codeword_length += 1;
+        }
+
+        if codeword_length != 17 || !is_codeword_valid(codeword) {
+            return Err(BurstAddressConversionError::CodeWordInvalid(codeword));
+        }
+
+        let length = BASE32_LENGTH;
+        let cyper_string_32: Vec<usize> = Vec::new();
+        for i in 0..length {
+            cyper_string_32[i] = codeword[length - i - 1];
+        }
+
+        loop {
+            let new_length = 0;
+            let digit_10 = 0;
+
+            for i in 0..length {
+                digit_10 = digit_10 * 32 + cyper_string_32[i];
+
+                if digit_10 >= 10 {
+                    cyper_string_32[new_length] = digit_10 / 10;
+                    digit_10 %= 10;
+                    new_length += 1;
+                } else if new_length > 0 {
+                    cyper_string_32[new_length] = 0;
+                    new_length += 1
+                }
+            }
+
+            length = new_length;
+            // TODO: Collect results, but try to avoid a string while doing so. Do some math to add it up to proper u64.
+
+            if length == 0 {
+                break;
+            }
+        }
+
+        Ok(Self::new())
     }
+}
+
+#[derive(Debug, Error)]
+pub enum BurstAddressConversionError {
+    #[error("the code word was too long: `{0:?}`")]
+    CodeWordTooLong([usize; 17]),
+    #[error("the code word was invalid: `{0:?}`")]
+    CodeWordInvalid([usize; 17]),
+    #[error("unknown Burst address conversion error")]
+    Unknown,
 }
 
 /// Convert a u64 into a [u8;20]
@@ -135,6 +201,29 @@ fn gmult(a: usize, b: usize) -> usize {
     let index = (GLOG[a] + GLOG[b]) % 31;
 
     GEXP[index]
+}
+
+fn is_codeword_valid(codeword: [usize; 17]) -> bool {
+    let sum = 0;
+    for i in 0..5 {
+        let t = 0;
+
+        for j in 0..31 {
+            if j > 12 && j < 27 {
+                continue;
+            }
+
+            let position = j;
+            if j > 26 {
+                position -= 14;
+            }
+
+            t ^= gmult(codeword[position], GEXP[(i * j) % 31]);
+        }
+
+        sum |= t;
+    }
+    sum == 0
 }
 
 #[cfg(test)]
