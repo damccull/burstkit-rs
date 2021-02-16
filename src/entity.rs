@@ -102,17 +102,19 @@ impl TryFrom<BurstAddress> for BurstId {
     type Error = BurstAddressConversionError;
 
     fn try_from(value: BurstAddress) -> Result<Self, Self::Error> {
-        let codeword = INITIAL_CODEWORD;
-        let codeword_length = 0;
+        let burst_address = value.address.replace(BURST_PREFIX, "");
+        println!("DEBUG:::::{}", burst_address);
+        let mut codeword = INITIAL_CODEWORD;
+        let mut codeword_length = 0;
 
-        for i in value.address.chars() {
-            let position_in_alphabet = match ALPHABET.chars().position(|s| s == i) {
+        for elem in burst_address.chars() {
+            let position_in_alphabet = match ALPHABET.chars().position(|s| s == elem) {
                 // Skip this iteration if position is none
                 None => continue,
-                Some(i) => i,
+                Some(pos) => pos,
             };
 
-            if codeword.len() > 16 {
+            if codeword_length > 16 {
                 return Err(BurstAddressConversionError::CodeWordTooLong(codeword));
             }
 
@@ -125,15 +127,19 @@ impl TryFrom<BurstAddress> for BurstId {
             return Err(BurstAddressConversionError::CodeWordInvalid(codeword));
         }
 
-        let length = BASE32_LENGTH;
-        let cyper_string_32: Vec<usize> = Vec::new();
+        let mut length = BASE32_LENGTH;
+        let mut cyper_string_32: Vec<usize> = Vec::new();
         for i in 0..length {
-            cyper_string_32[i] = codeword[length - i - 1];
+            cyper_string_32.push(codeword[length - i - 1]);
         }
 
+        // Since we're not using a string like BRS, the digits come out of this loop in reverse
+        // b_vec is a temporary repository to hold them so we can reverse and add them later
+        let mut b_vec: Vec<usize> = Vec::new();
+
         loop {
-            let new_length = 0;
-            let digit_10 = 0;
+            let mut new_length = 0;
+            let mut digit_10 = 0;
 
             for i in 0..length {
                 digit_10 = digit_10 * 32 + cyper_string_32[i];
@@ -149,14 +155,23 @@ impl TryFrom<BurstAddress> for BurstId {
             }
 
             length = new_length;
-            // TODO: Collect results, but try to avoid a string while doing so. Do some math to add it up to proper u64.
+
+            b_vec.push(digit_10);
 
             if length == 0 {
                 break;
             }
         }
 
-        Ok(Self::new())
+        let mut b_id: u64 = 0;
+
+        // Reverse b_vec to put the digits in the right order, then multiply b_vec by 10
+        // to shift the total to the left by a single place each time, and add the new 1's digit
+        for i in b_vec.iter().rev().cloned() {
+            b_id = b_id * 10 + i as u64;
+        }
+
+        Ok(Self::new(b_id))
     }
 }
 
@@ -204,16 +219,16 @@ fn gmult(a: usize, b: usize) -> usize {
 }
 
 fn is_codeword_valid(codeword: [usize; 17]) -> bool {
-    let sum = 0;
-    for i in 0..5 {
-        let t = 0;
+    let mut sum = 0;
+    for i in 1..5 {
+        let mut t = 0;
 
         for j in 0..31 {
             if j > 12 && j < 27 {
                 continue;
             }
 
-            let position = j;
+            let mut position = j;
             if j > 26 {
                 position -= 14;
             }
@@ -263,11 +278,11 @@ mod tests {
     }
 
     #[test]
-    fn burst_id_from_converts_burst_adress() {
+    fn burst_id_tryfrom_converts_burst_address() {
         let burst_id = BurstId::new(399812073269533888);
         let burst_address = BurstAddress::new("BURST-B982-YTG4-ZS2F-2C55D".to_string());
 
-        let from_burst_address = BurstId::from(burst_address);
+        let from_burst_address = BurstId::try_from(burst_address).unwrap();
 
         assert_eq!(from_burst_address, burst_id);
     }
