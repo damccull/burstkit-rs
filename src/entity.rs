@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, ops::Index, usize};
+use std::{convert::TryFrom, usize};
 use thiserror::Error;
 
 const INITIAL_CODEWORD: [usize; 17] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
