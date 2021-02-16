@@ -1,8 +1,14 @@
 [package]
 name = "burstkit-rs"
 version = "0.1.0"
-authors = ["David McCullough <damccull@gmail.com>"]
+authors = ["damccull <damccull@gmail.com>"]
 edition = "2018"
+license = "MIT"
+description = "A library to make working with Burstcoin and its APIs easier"
+readme = "README.md"
+repository = "https://github.com/damccull/burstkit-rs"
+keywords = ["burstcoin", "cryptocurrency", "blockchain"]
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
