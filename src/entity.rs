@@ -112,7 +112,6 @@ impl From<BurstId> for BurstAddress {
 }
 
 /// Represents a Burstcoin account Numeric ID number. _Example: 399812073269533888_
-
 #[derive(Debug, PartialEq)]
 pub struct BurstId {
     id: u64,
