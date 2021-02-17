@@ -41,6 +41,11 @@ impl BurstAddress {
     pub fn new(address: String) -> Self {
         BurstAddress { address }
     }
+
+    /// Get a reference to the burst address's address.
+    pub fn address(&self) -> &String {
+        &self.address
+    }
 }
 impl From<BurstId> for BurstAddress {
     /// Creates a [`BurstAddress`] from a valid [`BurstId`].
@@ -129,6 +134,11 @@ impl BurstId {
     /// ```
     pub fn new(id: u64) -> Self {
         BurstId { id }
+    }
+
+    /// Get a reference to the burst id's id.
+    pub fn id(&self) -> &u64 {
+        &self.id
     }
 }
 impl TryFrom<BurstAddress> for BurstId {
